@@ -39,6 +39,7 @@ assign(paste0("vid", i),
        data.frame(PID_vec, index_vec, cond_vec, meanRating_vec))
 }
 
+# yes, this is bad code -- but getting all of the videos to the same size is a massive pain
 for (i in 1:9) {
   if (i == 1) {
     vid1 %>% 
@@ -78,35 +79,9 @@ for (i in 1:9) {
   }
 }
 
+# move data frames into list
+df_list = mget(ls(pattern = "vid[0-9]"))
 
-
-
-
-
-
-#create separate dataframes for each PID
-for (i in seq_along(PID_names)) {
-  for (j in seq_along(vid_Names)) {
-    assign(paste0("PID",i, "vid", j),
-           filter(k, PID == PID_names[i] & videoName2 == vid_Names[j]))
-  }
-}
-
-
-for (i in seq_along(PID_names)) {
-k <- PID[i]vid1[1:vidLength[1],]
-assign(paste0("PID",i, "vid", j),
-       filter(dat2, PID == PID_names[i] & videoName2 == vid_Names[j]))
-}
-
-
-
-
-## subset based on condition
-detective <- dat2 %>% 
-  group_by(PID, videoName2) %>% 
-  filter(condName3 == 1) %>% 
-  #pivot_wider(names_from = condName3, values_from = meanRating)
 
 
 victim <- dat2 %>% 
