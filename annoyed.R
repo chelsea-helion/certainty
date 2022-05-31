@@ -93,7 +93,7 @@ k7 <- split(vid7, vid7$PID_vec)
 k8 <- split(vid8, vid8$PID_vec)
 k9 <- split(vid9, vid9$PID_vec)
 
-## create empty data frame to fill with correlations
+## create empty data frame to fill with correlations (again, bad code)
 corFrame1 <- data.frame()
 for (i in 1:length(k1)) {
   for (j in 1:length(k1)) {
