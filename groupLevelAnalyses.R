@@ -157,3 +157,62 @@ test <- lmer(meanRating ~ condName2 + (1|PID) + (1|videoName), data = dat_csv)
 summary(test)
 #confint(test)
 plot(effect("condName2", test), grid = TRUE)
+
+library(MetBrewer)
+library(ggridges)
+pp <- met.brewer(name = "Egypt")
+
+dat_csv <- na.omit(dat_csv)
+
+dat_csv %>% 
+  group_by(condName2) %>% 
+  mutate(group_mean = mean(meanRating)) %>% 
+  ungroup() %>% 
+  mutate(condNumber = fct_reorder(condName2, group_mean)) %>% 
+  
+  ggplot(aes(x = meanRating, y = condNumber, fill = group_mean)) +
+  geom_density_ridges(scale = 3/2, size = .2, color = pp[4]) +
+  scale_fill_gradient(low = pp[5], high = pp[2]) +
+  #scale_x_continuous(expand = expansion(mult = c(0, 0.05)), limits = c(-120, 100)) +
+  scale_y_discrete(NULL, expand = expansion(mult = c(0, 0.4))) +
+  theme(axis.text.y = element_text(hjust = 0),
+        axis.ticks.y = element_blank(),
+        legend.position = "none")
+
+library(brms)
+
+(mean_y <- mean(dat_csv$meanRating))
+(sd_y <- sd(dat_csv$meanRating))
+
+omega <- sd_y / 2
+sigma <- 2 * sd_y
+
+gamma_a_b_from_omega_sigma <- function(mode, sd) {
+  
+  if (mode <= 0) stop("mode must be > 0")
+  if (sd   <= 0) stop("sd must be > 0")
+  rate <- (mode + sqrt(mode^2 + 4 * sd^2)) / (2 * sd^2)
+  shape <- 1 + mode * rate
+  return(list(shape = shape, rate = rate))
+  
+}
+
+(s_r <- gamma_a_b_from_omega_sigma(mode = omega, sd = sigma))
+
+stanvars <- 
+  stanvar(mean_y,    name = "mean_y") + 
+  stanvar(sd_y,      name = "sd_y") +
+  stanvar(s_r$shape, name = "alpha") +
+  stanvar(s_r$rate,  name = "beta")
+
+fit19.1 <-
+  brm(data = dat_csv,
+      family = gaussian,
+      meanRating ~ condName2 + (1|videoName3) + (1|PID),
+      prior = c(prior(normal(mean_y, sd_y * 5), class = Intercept),
+                prior(gamma(alpha, beta), class = sd),
+                prior(cauchy(0, sd_y), class = sigma)),
+      iter = 4000, warmup = 1000, chains = 1, cores = 1,
+      seed = 19,
+      control = list(adapt_delta = 0.99),
+      stanvars = stanvars)

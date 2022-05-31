@@ -4,6 +4,7 @@ library(corrplot)
 library(tidyverse)
 library(purrr)
 library(magrittr)
+library(effects)
 
 ## load dataset and select columns of interest: Participant ID, certainty rating
 ## condition assignment (1 = detective, 2 = friend of victim, 3 = friend of
@@ -13,7 +14,7 @@ dat <- dat %>%
   filter(n >= 50)
 dat2 <- dat %>% 
   select(PID, meanRating, condName3, videoName2, secTiming, n) %>% 
-  group_by(PID,videoName2) %>% mutate(id = seq_len(n()))
+  group_by(PID,videoName2) %>% dplyr::mutate(id = seq_len(n()))
 dat3 <- dat2 %>% 
   group_by(videoName2)
 k <- group_split(dat3)
@@ -26,9 +27,12 @@ vid_Names <- c("broadchurchS1E3", "broadchurchS1E4", "fargoS1E2",
 ## create list of PIDs
 PID_names <- c("101", "102", "103", "104", "105", "106", "107", "109", "110",
                "111", "112", "113", "114", "115", "116", "117", "118", "119",
-               "120", "121", "122", "124", "125", "126", "127", "128", "129")
+               "120", "121", "122", "124", "125", "126", "127", "128", "129",
+               "130", "131", "132", "133", "134", "135", "136", "137")
 ## assign mean length values per video (50 samples per second)
 vidLength <- c(464, 281, 364, 230, 291, 418, 341, 201, 281)
+mean(vidLength)
+sd(vidLength)
 
 for (i in 1:9) {
 PID_vec <- (k[[i]]$PID)
@@ -117,6 +121,9 @@ for (i in 1:length(k3)) {
   i <- i + 1
 }
 
+## remove 102 (no variance)
+k4 <- within(k4, rm("102"))
+k4 <- within(k4, rm("127"))
 corFrame4 <- data.frame()
 for (i in 1:length(k4)) {
   for (j in 1:length(k4)) {
@@ -126,6 +133,7 @@ for (i in 1:length(k4)) {
   i <- i + 1
 }
 
+k5 <- within(k5, rm("112"))
 corFrame5 <- data.frame()
 for (i in 1:length(k5)) {
   for (j in 1:length(k5)) {
@@ -135,6 +143,8 @@ for (i in 1:length(k5)) {
   i <- i + 1
 }
 
+k6 <- within(k6, rm("113"))
+k6 <- within(k6, rm("134"))
 corFrame6 <- data.frame()
 for (i in 1:length(k6)) {
   for (j in 1:length(k6)) {
@@ -144,6 +154,7 @@ for (i in 1:length(k6)) {
   i <- i + 1
 }
 
+k7 <- within(k7, rm("102"))
 corFrame7 <- data.frame()
 for (i in 1:length(k7)) {
   for (j in 1:length(k7)) {
@@ -162,6 +173,7 @@ for (i in 1:length(k8)) {
   i <- i + 1
 }
 
+k9 <- within(k9, rm("122"))
 corFrame9 <- data.frame()
 for (i in 1:length(k9)) {
   for (j in 1:length(k9)) {
@@ -171,7 +183,101 @@ for (i in 1:length(k9)) {
   i <- i + 1
 }
 
+## calculate similarity
+v1sim <- rowMeans(corFrame1)
+v2sim <- rowMeans(corFrame2)
+v3sim <- rowMeans(corFrame3)
+v4sim <- rowMeans(corFrame4)
+v5sim <- rowMeans(corFrame5)
+v6sim <- rowMeans(corFrame6)
+v7sim <- rowMeans(corFrame7)
+v8sim <- rowMeans(corFrame8)
+v9sim <- rowMeans(corFrame9)
 
+
+## video 1 similarity
+v1sim_df <- data.frame(v1sim)
+v1sim_df$cond <- NA
+v1sim_df$vid <- NA
+v1sim_df$PID <- NA
+v1sim_df$vid <- "v1"
+table(vid1$PID_vec, vid1$cond_vec)
+PID_list <- c("101", "102", "103", "104", "105", "106", "107", "109", "110",
+               "111", "112", "113", "114", "115", "116", "117", "118", "119",
+               "120", "121", "122", "124", "125", "126", "127", "128", "129",
+               "130", "131", "132", "133", "134", "135", "136", "137")
+cond_list <- c(2, 3, 3, 3, 3, 1, 1, 2, 1, 3, 1, 3, 
+               2, 3, 3, 1, 2, 3, 3, 1, 1, 2, 3, 1, 
+               1, 3, 1, 3, 2, 3, 2, 1, 3, 1, 3)
+for (i in 1:length(cond_list)) {
+  v1sim_df$cond[i] <- cond_list[i]
+}
+v1sim_df$cond <- as.factor(v1sim_df$cond)
+for (i in 1:length(PID_list)) {
+  v1sim_df$PID[i] <- PID_list[i]
+}
+test <- lm(v1sim ~ cond, data = v1sim_df)
+summary(test)
+plot(effect("cond", test), grid = TRUE)
+
+## video 2 similarity
+v2sim_df <- data.frame(v2sim)
+v2sim_df$cond <- NA
+v1sim_df$PID <- NA
+v2sim_df$vid <- NA
+v2sim_df$vid <- "v2"
+table(vid2$PID_vec, vid2$cond_vec)
+cond_list <- c(2, 1, 3, 2, 1, 2, 3, 1, 2, 1, 1, 3, 
+               2, 1, 1, 1, 1, 1, 2, 3, 2, 1, 2, 1, 
+               1, 3, 1, 1, 3, 2, 3, 2, 1, 2)
+PID_list <- c("101", "102", "103", "104", "105", "106", "107", "109", "110",
+              "111", "113", "114", "115", "116", "117", "118", "119",
+              "120", "121", "122", "124", "125", "126", "127", "128", "129",
+              "130", "131", "132", "133", "134", "135", "136", "137")
+for (i in 1:length(cond_list)) {
+  v2sim_df$cond[i] <- cond_list[i]
+}
+v2sim_df$cond <- as.factor(v2sim_df$cond)
+for (i in 1:length(PID_list)) {
+  v2sim_df$PID[i] <- PID_list[i]
+}
+test <- lm(v2sim ~ cond, data = v2sim_df)
+summary(test)
+plot(effect("cond", test), grid = TRUE)
+
+## video 3 similarity
+v3sim_df <- data.frame(v3sim)
+v3sim_df$cond <- NA
+v3sim_df$vid <- NA
+v3sim_df$vid <- "v3"
+table(vid3$PID_vec, vid3$cond_vec)
+cond_list <- c(3, 3, 1, 1, 1, 3, 1, 3, 3, 1, 2, 3, 3, 
+               2, 1, 2, 2, 1, 3, 1, 2, 3, 3, 2, 3, 2, 
+               1, 2, 2, 1, 3, 1, 2, 3)
+for (i in 1:length(cond_list)) {
+  v3sim_df$cond[i] <- cond_list[i]
+}
+v3sim_df$cond <- as.factor(v3sim_df$cond)
+test <- lm(v3sim ~ cond, data = v3sim_df)
+summary(test)
+plot(effect("cond", test), grid = TRUE)
+
+## video 4 similarity ## no 102, 127
+v4sim_df <- data.frame(v4sim)
+v4sim_df$cond <- NA
+v4sim_df$vid <- NA
+v4sim_df$vid <- "v4"
+table(vid4$PID_vec, vid4$cond_vec)
+cond_list <- c(2, 2, 2, 2, 1, 2, 3, 2, 2, 2, 1, 2, 1, 1, 
+               3, 3, 1, 3, 1, 3, 3, 2, 3, 2, 2, 1, 1, 2, 
+               3, 2, 1, 3, 1)
+for (i in 1:length(cond_list)) {
+  v4sim_df$cond[i] <- cond_list[i]
+}
+v4sim_df$cond <- as.factor(v4sim_df$cond)
+test <- lm(v4sim ~ cond, data = v4sim_df)
+summary(test)
+plot(effect("cond", test), grid = TRUE)
 
 
 

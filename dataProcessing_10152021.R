@@ -12,8 +12,8 @@ library(lme4)
 library(lmerTest)
 library(stringr)
 
-log_data <- read.delim("/Users/tua37526/Dropbox/certainty/data/SAN129/SAN129.txt")
-PID <- 129
+log_data <- read.delim("/Users/tua37526/Dropbox/certainty/data/SAN137/SAN137.txt")
+PID <- 137
 
 ## rename columns
 log_data <- as.data.frame(log_data)
@@ -101,7 +101,7 @@ for (i in 1:9) {
 
 ## write .csv file
 df2$PID <- PID
-write.csv(df2, "/Users/tua37526/Dropbox/certainty/data/csvProcessed/129log.csv")
+write.csv(df2, "/Users/tua37526/Dropbox/certainty/data/csvProcessed/137log.csv")
 
 vid1 <- subset(df2, videoNum == 1)
 p <- vid1 %>%
