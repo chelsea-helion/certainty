@@ -1,0 +1,124 @@
+---
+title: "Naturalistic Moral Judgment"
+author: "Chelsea Helion & William Mitchell"
+format: html
+editor: visual
+---
+
+## Naturalistic moral judgment task
+
+The goal of this project is to examine what features of nmultimodal narrative stimuli (heretofore called "naturalistic") are associated with fluctuations in moral decision-making. To examine this question, we had participants view a series of video clips taken from popular television shows (e.g., "Mindhunter", "The Night Of"). For each video, participants took one of three perspectives, a detective investigating the case, a friend of the victim, or a friend of the accused (randomly assigned, each condition repeated three times). Task code is available here: [SAN Lab Github.](https://github.com/social-and-affective-neuroscience-lab/PythonScripts/tree/main/Certainty%20Task)
+
+### Load relevant packages and load in data
+
+```{r}
+#| label: load-packages/data
+#| echo: false
+#| include: false
+library(tidyverse) # for data wrangling and manipulation
+library(skimr) # vaguely nicer version of summary stats
+library(scales) # for scaling data (entropy)
+library(lme4) # multi-level modeling
+library(effects) # quick plots
+library(mgcv) # for generalized additive mixed models
+library(gratia) # for getting the derivatives of the GAMM models
+library(MetBrewer) # palettes for plotting
+library(monochromeR) # also palettes for plotting
+library(brms) # for hierarchical bayesian models
+library(tidybayes) # for bayesian analyses
+library(janitor) # for making variable names easier to work with
+
+df_behav <- read_csv("/Users/tua37526/Dropbox/df_cert_behav.csv")
+
+# select variables related to the certainty task
+df_behav <- df_behav %>%
+  select(
+    PID,
+    Age,
+    Gender,
+    Ethnicity,
+    Video,
+    Time_video,
+    Condition,
+    Rating,
+    IRI_perstake,
+    IRI_fantasy,
+    IRI_empath,
+    IRI_distress,
+    DERS_nonaccept,
+    DERS_goals,
+    DERS_impulse,
+    DERS_aware,
+    DERS_strategy,
+    DERS_clarity,
+    emo_Adoration,
+    `emo_Aesthetic Appreciation`,
+    emo_Amusement,
+    emo_Anxiety,
+    emo_Awe,
+    emo_Boredom,
+    emo_Confusion,
+    emo_Craving,
+    emo_Disgust,
+    `emo_Empathic Pain`,
+    emo_Entrancement,
+    emo_Excitement,
+    emo_Fear,
+    emo_Horror,
+    emo_Interest,
+    emo_Joy,
+    emo_Romance,
+    emo_Sadness,
+    `emo_Sexual Desire`,
+    emo_Surprise,
+    Entropy,
+    Comprehend,
+    Engaged,
+    Influence_Identity,
+    Influence_Information,
+    Influence_Context,
+    Role_Adopt,
+    Role_Maintain,
+    Role_Influence,
+    Complexity,
+    Curiosity,
+    Intense_Feel,
+    Intense_Video
+  )
+
+# change some variable types, sort based on time
+df_behav$Video <- as.factor(df_behav$Video)
+df_behav <-
+  df_behav[order(df_behav$Video, df_behav$PID, df_behav$Time_video),]
+df_behav$Condition <- as.factor(df_behav$Condition)
+df_behav$Video <- as.factor(df_behav$Video)
+
+
+```
+
+### Generate summary stats for demographic and task features of the dataset
+
+```{r}
+#| echo: false
+
+df_behav %>% 
+  filter(Time_video == 10,
+         Video == "undoingS1E1") %>%
+  summarise(mean_age = mean(Age, na.rm = TRUE),
+            sd_age = sd(Age, na.rm = TRUE))
+
+df_behav %>%
+  filter(Time_video == 1,
+         Video == "broadchurchS1E3") %>%
+  {table(.$Gender)}
+
+
+```
+
+### Summary statistics and comparisons across conditions for task-related judgments
+
+Participants indicated the following on seven-point scales: 1) task engagement, 2) task comprehension, 3) emotional intensity, 4) task-related curiosity, 5) evaluations of task complexity, how influential 6) context, 7) information, and 8) character identity was for their judgments. They also indicated the extent to which the role/condition influenced their judgment, how easy the role/condition was to adopt, and how easy the role/condition was to maintain.
+
+```{r}
+
+```
