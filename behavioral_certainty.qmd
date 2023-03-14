@@ -221,3 +221,30 @@ summ_ratings %>%
 
 
 ```
+
+### Comparing linear and non-linear functions for time-course analysis
+
+Ok, this is where the fun begins. Given the nature of our data (continuous ratings over a time course) the associations between condition, time, and rating and likely very non-linear. We can compare a variety of polynomial and linear fits to examine whether condition/role is associated with different behavioral time courses (for a great overview of this approach applied to developmental data, see [Nook et al., 2020](https://psycnet.apa.org/record/2019-31446-001)).
+
+Our data is a bit complicated --- we have nine videos, which all differ in terms of their content. So we will have to fit separate models for all nine before we can start to make more general inferences about the nature of the association between role and moral certainty.
+
+```{r}
+video_split <- split(df_behav, df_behav$Video)
+linear_results_list <- list()
+model_formula <- "Rating ~ Condition + (1|PID)"
+
+# linear model fits
+
+for (i in seq_along(video_split)){
+   model <- lmer(model_formula, data = video_split[[i]])
+   linear_results_list[[i]] <- summary(model)
+}
+
+# print model fit results
+for (i in seq_along(video_split)) {
+  print(paste("Results for video", i))
+  print(linear_results_list[[i]])
+}
+
+
+```
