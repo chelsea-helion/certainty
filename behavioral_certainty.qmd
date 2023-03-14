@@ -27,6 +27,7 @@ library(monochromeR) # also palettes for plotting
 library(brms) # for hierarchical bayesian models
 library(tidybayes) # for bayesian analyses
 library(janitor) # for making variable names easier to work with
+library(ggradar) # for radar plot
 
 df_behav <- read_csv("/Users/tua37526/Dropbox/df_cert_behav.csv")
 
@@ -120,5 +121,103 @@ df_behav %>%
 Participants indicated the following on seven-point scales: 1) task engagement, 2) task comprehension, 3) emotional intensity, 4) task-related curiosity, 5) evaluations of task complexity, how influential 6) context, 7) information, and 8) character identity was for their judgments. They also indicated the extent to which the role/condition influenced their judgment, how easy the role/condition was to adopt, and how easy the role/condition was to maintain.
 
 ```{r}
+#| echo: false
+
+task_ratings <-
+  df_behav %>%
+  filter(Time_video == 1) %>%
+  select(
+    PID,
+    Condition,
+    Comprehend,
+    Engaged,
+    Influence_Identity,
+    Influence_Information,
+    Influence_Context,
+    Role_Adopt,
+    Role_Maintain,
+    Role_Influence,
+    Complexity,
+    Curiosity,
+    Intense_Feel,
+    Intense_Video
+  )
+
+mixed_anova_func <- function(data, within_factors, subject_id) {
+  # Initialize an empty list to store the results
+  results_list <- list()
+  
+  # Iterate through the column names in the dataframe
+  for (col_name in names(data)) {
+    # Check if the column is numeric
+    if (is.numeric(data[[col_name]])) {
+      # Set up the formula for the mixed ANOVA
+      formula <- as.formula(paste(col_name, "~", paste(within_factors, collapse="+"), "+ Error(", subject_id, "/", paste(within_factors, collapse="+"), ")", sep=""))
+      
+      # Fit the mixed ANOVA model using the "aov()" function
+      model <- aov(formula, data = data)
+      
+      # Add the results to the results list
+      results_list[[col_name]] <- summary(model)
+    }
+  }
+  
+  # Return the results list
+  return(results_list)
+}
+
+mixed_anova_func(data = task_ratings, within_factors = "Condition", subject_id = "PID")
+```
+
+It looks like the role-based comparisons are significantly different from one another (e.g., role adopt, role maintain, role influence). Plot all of these ratings using a radar plot to get a sense of the distributions.
+
+```{r}
+
+summ_ratings <-
+  df_behav %>% 
+  group_by(Condition) %>%
+  summarise(meanComprehend = mean(Comprehend),
+            meanEngaged = mean(Engaged),
+            meanInfluenceIdentity = mean(Influence_Identity),
+            meanInfluenceInformation = mean(Influence_Information),
+            meanInfluenceContext = mean(Influence_Context),
+            meanRoleAdopt = mean(Role_Adopt),
+            meanRoleMaintain = mean(Role_Maintain),
+            meanRoleInfluence = mean(Role_Influence),
+            meanComplexity = mean(Complexity),
+            meanIntenseFeel = mean(Intense_Feel),
+            meanIntenseVideo = mean(Intense_Video))
+  
+
+summ_ratings %>%
+  ggradar(
+    values.radar = c(1, 4, 7),
+    axis.label.size = 7,
+    grid.label.size = 7,
+    axis.labels = c(
+      "Comprehend",
+      "Engaged",
+      "Influenced by \n Identity",
+      "Influenced by \n Information",
+      "Influenced by \n Context",
+      "Ease of \n Adopting Role*",
+      "Ease of \n Maintaining Role*",
+      "Extent of \n Role Influence*",
+      "Complexity",
+      "Feeling Intensity",
+      "Video Intensity"
+    ),
+    grid.min = 1,
+    grid.mid = 4,
+    grid.max = 7,
+    group.line.width = 1,
+    group.point.size = 3,
+    group.colours = c("#00AFBB", "#E7B800", "#FC4E07"),
+    background.circle.colour = "white",
+    gridline.mid.colour = "grey",
+    legend.position = "bottom",
+    plot.legend = FALSE
+  )
+
 
 ```
