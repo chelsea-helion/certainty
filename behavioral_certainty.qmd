@@ -226,25 +226,73 @@ summ_ratings %>%
 
 Ok, this is where the fun begins. Given the nature of our data (continuous ratings over a time course) the associations between condition, time, and rating and likely very non-linear. We can compare a variety of polynomial and linear fits to examine whether condition/role is associated with different behavioral time courses (for a great overview of this approach applied to developmental data, see [Nook et al., 2020](https://psycnet.apa.org/record/2019-31446-001)).
 
-Our data is a bit complicated --- we have nine videos, which all differ in terms of their content. So we will have to fit separate models for all nine before we can start to make more general inferences about the nature of the association between role and moral certainty.
+Our data is a bit complicated --- we have nine videos, which all differ in terms of their content, and we have three conditions, which could all have different associations. So we will have to fit separate models for all nine videos and all three conditions before we can start to make more general inferences about the nature of the association between role and moral certainty.
 
 ```{r}
-video_split <- split(df_behav, df_behav$Video)
-linear_results_list <- list()
-model_formula <- "Rating ~ Condition + (1|PID)"
+#| echo: FALSE
+#| warning: FALSE
 
-# linear model fits
+## add polynomial variables
+df_behav$time_sq <- df_behav$Time_video ^ 2
+df_behav$time_cub <- df_behav$Time_video ^ 3
+video_split <-
+  split(df_behav, interaction(df_behav$Video, df_behav$Condition))
+df_behav$PID <- as.factor(df_behav$PID)
 
-for (i in seq_along(video_split)){
-   model <- lmer(model_formula, data = video_split[[i]])
-   linear_results_list[[i]] <- summary(model)
-}
+lmer_model_formulas <- list(
+  "Rating ~ Time_video + (1|PID)",
+  "Rating ~ time_sq + Time_video + (1|PID)",
+  "Rating ~ time_cub + time_sq + Time_video + (1|PID)"
+)
 
-# print model fit results
+gam_model_formula <- list("Rating ~ s(Time_video) + s(PID, bs = 're')")
+
+results_list <- list()
+
+# Iterate over each data frame in the list
 for (i in seq_along(video_split)) {
-  print(paste("Results for video", i))
-  print(linear_results_list[[i]])
+  # Create an empty list to store the models for this data frame
+  results_list[[i]] <- list()
+  
+  # Iterate over the lmer model formulas, fit each model, and store the model object in the list
+  for (j in seq_along(lmer_model_formulas)) {
+    results_list[[i]][["lmer"]][[j]] <-
+      lmer(lmer_model_formulas[[j]], data = video_split[[i]])
+  }
+  
+  # Iterate over the gam model formulas, fit each model, and store the model object in the list
+  results_list[[i]][["gam"]][[1]] <-
+    bam(Rating ~ s(Time_video) + s(PID, bs = 're'), data = video_split[[i]])
 }
 
+  
+  # Compare models for each split data frame using AIC and BIC
+  for (i in seq_along(video_split)) {
+    cat("\nComparison for data frame", i, ":\n")
+    
+    for (j in seq_along(lmer_model_formulas)) {
+      lmer_model <- results_list[[i]][["lmer"]][[j]]
+      lmer_aic <- AIC(lmer_model)
+      lmer_bic <- BIC(lmer_model)
+      cat("lmer model", j, "AIC:", lmer_aic, "BIC:", lmer_bic, "\n")
+    }
+    
+    {
+      gam_model <- results_list[[i]][["gam"]][[1]]
+      gam_aic <- AIC(gam_model)
+      gam_bic <- BIC(gam_model)
+      cat("gam model", 1, "AIC:", gam_aic, "BIC:", gam_bic, "\n")
+    }
+  }
+  
+```
 
+Ok, so for **all** models, the gam fit is superior to the lmer models (linear, quadratic, cubic). This isn't super surprising (though worth noting that some of the linear fits do a pretty decent job for the friend of the victim condition). Now let's take the first derivatives of the models, and see if they plateau at different points based on condition.
+
+```{r}
+```
+
+Now cubic models.
+
+```{r}
 ```
