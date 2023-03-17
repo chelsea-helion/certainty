@@ -28,6 +28,7 @@ library(brms) # for hierarchical bayesian models
 library(tidybayes) # for bayesian analyses
 library(janitor) # for making variable names easier to work with
 library(ggradar) # for radar plot
+library(ggplot2) # for plotting
 
 df_behav <- read_csv("/Users/tua37526/Dropbox/df_cert_behav.csv")
 
@@ -290,9 +291,97 @@ for (i in seq_along(video_split)) {
 Ok, so for **all** models, the gam fit is superior to the lmer models (linear, quadratic, cubic). This isn't super surprising (though worth noting that some of the linear fits do a pretty decent job for the friend of the victim condition). Now let's take the first derivatives of the models, and see if they plateau at different points based on condition.
 
 ```{r}
+
+# Function to compute first derivatives of GAM predictions
+compute_first_derivatives <- function(gam_model, data) {
+  # Compute the first derivatives
+  len_video <- max(video_split[[i]][["Time_video"]]) - min(video_split[[i]][["Time_video"]]) + 1
+
+# Print the result
+print(len_video)
+
+  derivatives <- derivatives(gam_model, n=len_video)
+    fitted(gam_model, data, derivs = 1)
+
+
+  return(derivatives)
+}
+
+# Initialize an empty list to store the derivatives
+derivatives_list <- list()
+
+# Calculate the first derivatives for each GAM model in the results_list
+for (i in seq_along(results_list)) {
+  gam_model <- results_list[[i]][["gam"]][[1]]
+  derivatives <- compute_first_derivatives(gam_model, video_split[[i]])
+  derivatives_list[[i]] <- derivatives
+}
+
+# Print the first derivatives for each video
+# print(derivatives_list)
+
 ```
 
-Now cubic models.
+Plot the derivatives across time.
 
 ```{r}
+
+# Function to create a data frame with time values and first derivatives
+create_derivatives_df <- function(derivatives, time_values) {
+  df <- data.frame(Time = time_values, Derivative = derivatives)
+  return(df)
+}
+
+# Initialize an empty list to store the data frames
+derivatives_df_list <- list()
+
+# Create a data frame with time values and first derivatives for each video
+for (i in seq_along(derivatives_list)) {
+  time_values <- derivatives_list[[i]][["data"]]
+  derivatives_df <- create_derivatives_df(derivatives_list[[i]], time_values)
+  derivatives_df$Video <- factor(i)  # Add a Video column to identify each video
+  derivatives_df_list[[i]] <- derivatives_df
+}
+
+# Combine the data frames into a single data frame
+combined_derivatives_df <- do.call(rbind, derivatives_df_list)
+
 ```
+
+As a test case, let's plot the first derivatives by condition for the first video.
+
+##### Broadchurch; Season 1, Episode 3
+
+```{r}
+broadchurchS1E3 <-
+  combined_derivatives_df %>% 
+  filter(
+    Video == 1 |
+    Video == 10 |
+    Video == 19
+    ) %>% 
+  group_by(Video, Time) %>% 
+  summarise(mean_deriv = mean(Derivative.derivative),
+            mean_lowerCI = mean(Derivative.lower),
+            mean_upperCI = mean(Derivative.upper))
+
+test <- lm(mean_deriv ~ Video, data = broadchurchS1E3)
+summary(test)
+broadchurchS1E3$Video <- relevel(broadchurchS1E3$Video, ref = 10)
+
+# Plot the first derivatives across time
+ggplot(broadchurchS1E3, aes(x = Time, y = mean_deriv, color = Video)) +
+  # geom_point() +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = mean_lowerCI, ymax = mean_upperCI, fill = Video), alpha = 0.1) +
+  scale_fill_manual(values = c("#00AFBB", "#E7B800", "#FC4E07")) +
+  labs(title = "First Derivatives of GAM Models Across Time",
+       x = "Time",
+       y = "First Derivative") +
+  scale_color_manual(values = c("#00AFBB", "#E7B800", "#FC4E07"), 
+                     labels = c("detective", "friend of\n accused", "friend of\n victim")) +
+  theme_classic() +
+  theme(legend.position="none")
+```
+
+Ok cool, looks good. Now let's add EmoNet values for each video.
