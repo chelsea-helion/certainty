@@ -114,6 +114,18 @@ df_behav %>%
          Video == "broadchurchS1E3") %>%
   {table(.$Gender)}
 
+# Example data
+set.seed(123)
+df <- data.frame(video = rep(1:9, each = 20), index = sample(1:10, 180, replace = TRUE))
+
+# Loop to create percentage variable by video
+for (i in unique(df_behav$Video)) {
+  subset_df <- df_behav[df_behav$Video == i, ]
+  max_index <- max(subset_df$Time_video)
+  for (j in 1:nrow(subset_df)) {
+    df_behav$percentage[df_behav$Video == i][j] <- (subset_df$Time_video[j] / max_index) * 100
+  }
+}
 
 ```
 
@@ -384,4 +396,27 @@ ggplot(broadchurchS1E3, aes(x = Time, y = mean_deriv, color = Video)) +
   theme(legend.position="none")
 ```
 
-Ok cool, looks good. Now let's add EmoNet values for each video.
+Ok cool, looks good. Let's directly compare the perspectives to one another, and let's also take into account the EmoNet values for each video.
+
+```{r}
+
+# test whether perspective influences certainty across time
+m1 <- bam(Rating ~ Condition + s(percentage, by=Condition, k = 100) + s(Video, bs ="re") + s(PID, bs ="re"), data = df_behav)
+summary(m1)
+gam.check(m1)
+
+# order the factor of condition for comparison
+df_behav$OF_Condition <- as.factor(df_behav$Condition)
+df_behav$OF_Condition <- as.ordered(df_behav$OF_Condition)
+# change contrast to treatment coding
+contrasts(df_behav$OF_Condition) <- 'contr.treatment'
+contrasts(df_behav$OF_Condition)
+
+# run ordered factor model
+m.orderedfactor <- bam(Rating ~ OF_Condition + s(percentage, k = 100) + s(percentage, by=OF_Condition, k = 100) + s(Video, bs ="re") + s(PID, bs ="re"), data = df_behav)
+summary(m.orderedfactor)
+gam.check(m.orderedfactor)
+plot(m.orderedfactor, select=3)
+
+
+```
